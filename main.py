@@ -1,6 +1,5 @@
 import argparse
 import logging
-import random
 import pandas as pd
 from faker import Faker
 import chardet
@@ -65,9 +64,13 @@ class DataSamplingAnonymizer:
 
             self.data = pd.read_csv(self.input_file, encoding=self.encoding, header=0 if self.header else None, sep=self.delimiter, engine='python')
             
-            # Handle no header case
+            # Handle no header case. The generated names are column1,
+            # column2, and so on, because those are the names the usage
+            # examples tell users to pass with --no_header; the old
+            # column_0 style names made every documented no-header
+            # invocation fail the column check below.
             if not self.header:
-              self.data.columns = [f'column_{i}' for i in range(self.data.shape[1])]
+              self.data.columns = [f'column{i + 1}' for i in range(self.data.shape[1])]
               
         except Exception as e:
             logging.error(f"Error loading data: {e}")
@@ -87,6 +90,9 @@ class DataSamplingAnonymizer:
 
             for column in self.columns_to_anonymize:
                 if column in sampled_data.columns:
+                    # Strings get fake names and numbers get fake numbers:
+                    # a name in a numeric column would change its type and
+                    # break the statistics the sample is kept for.
                     sampled_data[column] = sampled_data[column].apply(lambda x: self.fake.name() if isinstance(x, str) else self.fake.random_number())
 
             self.anonymized_data = sampled_data
