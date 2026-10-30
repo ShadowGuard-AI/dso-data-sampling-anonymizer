@@ -1,3 +1,5 @@
+![Banner](banner.png)
+
 # dso-data-sampling-anonymizer
 Randomly samples rows or columns from a dataset and replaces sensitive information in the sampled data with dummy values, reducing the size of the dataset while preserving statistical properties for testing purposes. - Focused on Tools for sanitizing and obfuscating sensitive data within text files and structured data formats
 
