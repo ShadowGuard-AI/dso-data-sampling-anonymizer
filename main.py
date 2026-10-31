@@ -40,8 +40,11 @@ class DataSamplingAnonymizer:
         if not os.path.exists(self.input_file):
             raise FileNotFoundError(f"Input file not found: {self.input_file}")
 
-        if not 0.0 <= self.sample_size <= 1.0:
-            raise ValueError("Sample size must be between 0.0 and 1.0")
+        if os.path.realpath(self.input_file) == os.path.realpath(self.output_file):
+            raise ValueError("Output file is the same as the input file; refusing to overwrite the input")
+
+        if not 0.0 < self.sample_size <= 1.0:
+            raise ValueError("Sample size must be greater than 0.0 and at most 1.0")
 
         if not isinstance(self.columns_to_anonymize, list):
             raise TypeError("Columns to anonymize must be a list")
@@ -87,6 +90,10 @@ class DataSamplingAnonymizer:
         """
         try:
             sampled_data = self.data.sample(frac=self.sample_size, random_state=42)  # Consistent sampling
+
+            if len(sampled_data) == 0:
+                logging.error("No rows sampled")
+                raise ValueError("No rows sampled")
 
             for column in self.columns_to_anonymize:
                 if column in sampled_data.columns:
