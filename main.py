@@ -89,6 +89,12 @@ class DataSamplingAnonymizer:
         Samples the data and anonymizes the specified columns.
         """
         try:
+            # The sample seed is a fixed 42 written here, not an option: the
+            # same input always gives the same rows, which makes runs
+            # comparable, and also means anyone who knows the file can
+            # predict exactly which rows a sample holds. The fake values
+            # drawn below are not seeded, so the rows repeat and their
+            # replacements do not.
             sampled_data = self.data.sample(frac=self.sample_size, random_state=42)  # Consistent sampling
 
             if len(sampled_data) == 0:
@@ -100,6 +106,14 @@ class DataSamplingAnonymizer:
                     # Strings get fake names and numbers get fake numbers:
                     # a name in a numeric column would change its type and
                     # break the statistics the sample is kept for.
+                    # The dispatch is per value, and its edges are mine to
+                    # state: a missing value is a float, not a string, so it
+                    # is replaced with a random number, quietly filling a
+                    # gap in the data with an invented value; and
+                    # random_number draws up to ten digits with no relation
+                    # to the column's own range, so an age of 30 can come
+                    # back as a nine digit number and the column's shape
+                    # changes far more than its type does.
                     sampled_data[column] = sampled_data[column].apply(lambda x: self.fake.name() if isinstance(x, str) else self.fake.random_number())
 
             self.anonymized_data = sampled_data
@@ -112,6 +126,10 @@ class DataSamplingAnonymizer:
         Saves the anonymized data to the output CSV file.
         """
         try:
+            # index=False drops the original row positions, so the output
+            # cannot be traced back to where a sampled row sat in the
+            # input, and the file is written as utf-8 whatever encoding the
+            # input was detected in.
             self.anonymized_data.to_csv(self.output_file, index=False, encoding='utf-8')
         except Exception as e:
             logging.error(f"Error saving data: {e}")
